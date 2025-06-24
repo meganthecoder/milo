@@ -190,6 +190,7 @@ export const getOrigin = (fgColor) => {
   const mappings = {
     cc: 'hawks',
     dc: 'doccloud',
+    'adobe for business': 'bacom',
   };
   const originLC = mappings[origin.toLowerCase()] || origin;
   if (originLC) {
