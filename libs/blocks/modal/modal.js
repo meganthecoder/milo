@@ -49,7 +49,8 @@ export function sendAnalytics(event) {
   }
 }
 
-export function closeModal(modal) {
+export async function closeModal(modal, closeCallback) {
+  if (typeof closeCallback === 'function') await closeCallback(modal);
   const { id } = modal;
   const closeEvent = new Event('milo:modal:closed');
   window.dispatchEvent(closeEvent);
@@ -120,12 +121,17 @@ function isElementInView(element) {
 
 function getCustomModal(custom, dialog) {
   const { miloLibs, codeRoot } = getConfig();
+  let closeCallback;
   loadStyle(`${miloLibs || codeRoot}/blocks/modal/modal.css`);
   if (custom.id) dialog.id = custom.id;
   if (custom.title) dialog.setAttribute('aria-label', custom.title);
   if (custom.class) dialog.classList.add(custom.class);
-  if (custom.closeEvent) dialog.addEventListener(custom.closeEvent, () => closeModal(dialog));
+  if (custom.closeCallback) closeCallback = custom.closeCallback;
+  if (custom.closeEvent) {
+    dialog.addEventListener(custom.closeEvent, () => closeModal(dialog, closeCallback));
+  }
   dialog.append(custom.content);
+  return { closeCallback };
 }
 
 async function getPathModal(path, dialog) {
@@ -163,9 +169,13 @@ export async function getModal(details, custom) {
   dialogLoadingSet.add(id);
   const dialog = createTag('div', { class: 'dialog-modal', id, role: 'dialog', 'aria-modal': true });
   const loadedEvent = new Event('milo:modal:loaded');
+  let closeModalCallback;
 
   if (custom && !custom?.title) custom.title = findDetails(window.location.hash, null)?.title;
-  if (custom) getCustomModal(custom, dialog);
+  if (custom) {
+    const customModal = getCustomModal(custom, dialog);
+    closeModalCallback = customModal.closeCallback;
+  }
   if (details) await getPathModal(details.path, dialog);
   if (isDelayedModal) {
     dialog.classList.add('delayed-modal');
@@ -215,11 +225,11 @@ export async function getModal(details, custom) {
   });
 
   close.addEventListener('click', (e) => {
-    closeModal(dialog);
+    closeModal(dialog, closeModalCallback);
     e.preventDefault();
   });
 
-  const documentKeydownListener = (event) => (event.key === 'Escape') && closeModal(dialog);
+  const documentKeydownListener = (event) => (event.key === 'Escape') && closeModal(dialog, closeModalCallback);
   document.addEventListener('keydown', documentKeydownListener);
   dialog._documentKeydownListener = documentKeydownListener;
 
@@ -238,7 +248,7 @@ export async function getModal(details, custom) {
       'daa-ll': `${analyticsEventName}:modalClose:curtainClose`,
     });
     curtain.addEventListener('click', (e) => {
-      if (e.target === curtain) closeModal(dialog);
+      if (e.target === curtain) closeModal(dialog, closeModalCallback);
     });
     dialog.insertAdjacentElement('afterend', curtain);
     [...document.querySelectorAll('header, main, footer')]

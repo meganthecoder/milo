@@ -1,4 +1,4 @@
-import { getModal } from '../modal/modal.js';
+import { getModal, closeModal } from '../modal/modal.js';
 import { createTag, getConfig } from '../../utils/utils.js';
 
 const cardIcon = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.93446 10.5992C7.75946 10.5992 7.58289 10.5539 7.42352 10.4617C7.03836 10.239 6.84383 9.79763 6.93836 9.36325L7.52039 6.66404L5.6657 4.61794C5.36726 4.28825 5.3157 3.80856 5.53836 3.42341C5.76101 3.03748 6.20633 2.84294 6.6368 2.93825L9.33601 3.52028L11.3821 1.6656C11.7126 1.3656 12.1923 1.31638 12.5766 1.53825C12.9618 1.76091 13.1563 2.20232 13.0618 2.63669L12.4798 5.33591L14.3345 7.382C14.6329 7.71091 14.6837 8.1906 14.4618 8.57576C14.2391 8.96013 13.7993 9.15623 13.3641 9.06248L10.6649 8.47889L8.61806 10.3344C8.42509 10.5094 8.18054 10.5992 7.93446 10.5992ZM8.71336 6.82654L8.22977 9.06638L9.92742 7.52732C10.1696 7.30779 10.504 7.21716 10.8251 7.28591L13.0665 7.77028L11.5274 6.07263C11.3071 5.82888 11.2173 5.49216 11.2876 5.17184L11.7704 2.93356L10.0727 4.47263C9.82899 4.69294 9.49306 4.782 9.17196 4.71247L6.93368 4.22965L8.47274 5.92731C8.69305 6.17028 8.7829 6.50623 8.71336 6.82654Z" fill="#292929"/><path d="M2.67645 14.6017C2.57333 14.6017 2.47021 14.5751 2.37645 14.5212C2.15067 14.3907 2.03505 14.1298 2.08973 13.8751L2.33505 12.7407L1.55536 11.8813C1.38036 11.6884 1.34989 11.404 1.48036 11.1782C1.61083 10.9524 1.87333 10.8399 2.12645 10.8915L3.26083 11.1368L4.12021 10.3571C4.31396 10.1813 4.59677 10.1516 4.82333 10.2821C5.04912 10.4126 5.16474 10.6735 5.11005 10.9282L4.86474 12.0626L5.64443 12.922C5.81943 13.1149 5.8499 13.3993 5.71943 13.6251C5.58896 13.8509 5.32568 13.9618 5.07333 13.9118L3.93896 13.6665L3.07958 14.4462C2.9663 14.5485 2.82177 14.6017 2.67645 14.6017Z" fill="#292929"/></svg>';
@@ -9,6 +9,16 @@ const inputLabelText = 'Ask AI';
 
 function getAnalyticsLabel(step) {
   return `Filters|${getConfig()?.brandConciergeAA}|bc#${step}`;
+}
+
+function animateModalClosed(modal) {
+  modal.style.transition = 'top 200ms ease-out';
+  modal.style.top = '100vh';
+  const modalCurtain = modal.nextElementSibling;
+  if (modalCurtain?.classList.contains('modal-curtain')) {
+    modalCurtain.style.transition = 'opacity 200ms ease-out';
+    modalCurtain.style.opacity = '0';
+  }
 }
 
 async function openChatModal(initialMessage, el) {
@@ -22,10 +32,115 @@ async function openChatModal(initialMessage, el) {
   const modal = await getModal(null, {
     id: 'brand-concierge-modal',
     content: innerModal,
+    closeCallback: async (dialog) => {
+      animateModalClosed(dialog);
+      await new Promise((resolve) => {
+        setTimeout(() => resolve(), 200);
+      });
+    },
   });
   modal.querySelector('.dialog-close').setAttribute('daa-ll', getAnalyticsLabel('modal-close'));
   document.querySelector('.modal-curtain').setAttribute('daa-ll', getAnalyticsLabel('modal-close'));
   el.querySelector('.bc-input-field input').value = '';
+
+  // Add touch event handling for modal drag and swipe
+  let startY = 0;
+  let startTop = 0;
+  let currentTop = 0;
+  let isDragging = false;
+  let startTime = 0;
+  let velocity = 0;
+  const modalCurtain = document.querySelector('.modal-curtain');
+
+  const handleTouchStart = (e) => {
+    // Don't handle touch events if the target is the close button
+    if (e.target.closest('.dialog-close')) {
+      return;
+    }
+
+    startY = e.touches[0].clientY;
+    startTop = parseInt(modal.style.top, 10) || 0;
+    startTime = Date.now();
+    isDragging = true;
+    velocity = 0;
+
+    // Prevent default to avoid scrolling
+    e.preventDefault();
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - startY;
+    currentTop = startTop + deltaY;
+
+    // Only allow downward movement
+    if (currentTop >= 0) {
+      modal.style.top = `${currentTop}px`;
+      modal.style.transition = 'none';
+
+      // Update modal curtain opacity based on swipe distance
+      const windowHeight = window.innerHeight;
+      // Max swipe distance for full opacity change
+      const maxSwipeDistance = windowHeight * 0.5;
+      const swipeProgress = Math.min(deltaY / maxSwipeDistance, 1);
+      // Reduce opacity as user swipes down, minimum 0.1
+      const opacity = Math.max(1 - swipeProgress, 0.1);
+
+      if (modalCurtain) modalCurtain.style.opacity = opacity;
+    }
+
+    // Prevent default to avoid scrolling
+    e.preventDefault();
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+
+    isDragging = false;
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    const distance = currentTop - startTop;
+
+    // Calculate velocity (pixels per millisecond)
+    velocity = distance / duration;
+
+    // Reset transition
+    modal.style.transition = '';
+
+    // Check if it's a fast swipe down (velocity > 0.5 px/ms)
+    if (velocity > 0.5 && distance > 50) {
+      animateModalClosed(modal);
+      closeModal(modal);
+      return;
+    }
+
+    // Check if user let go in bottom 25% of the page
+    const windowHeight = window.innerHeight;
+    const bottomThreshold = windowHeight * 0.75; // 75% from top = bottom 25%
+
+    if (currentTop > bottomThreshold) {
+      // User let go in bottom 25% - close modal
+      animateModalClosed(modal);
+      closeModal(modal);
+    } else {
+      // User let go above bottom 25% - keep modal open, animate back to top
+      modal.style.transition = 'top 200ms ease-out';
+      modal.style.top = '0px';
+
+      // Reset modal curtain opacity when modal returns to top
+      if (modalCurtain) {
+        modalCurtain.style.transition = 'opacity 200ms ease-out';
+        modalCurtain.style.opacity = '1';
+      }
+    }
+  };
+
+  // Add touch event listeners to the modal
+  modal.addEventListener('touchstart', handleTouchStart, { passive: false });
+  modal.addEventListener('touchmove', handleTouchMove, { passive: false });
+  modal.addEventListener('touchend', handleTouchEnd, { passive: false });
 }
 
 function decorateBackground(el, background) {
