@@ -258,8 +258,43 @@
   }
 }
 
+@keyframes round-corners {
+  from {
+    border-radius: 0;
+  }
+
+  to {
+    border-radius: 24px 24px 0 0;
+  }
+}
+
+@keyframes scale-down {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(0.9);
+  }
+}
+
+body.bc-modal-open {
+  background: #000;
+}
+
 #brand-concierge-modal {
   --modal-header-height: 56px;
+}
+
+.bc-page-container {
+  transform: scale(0.9);
+  animation: var(--bc-animation-up-time) ease-out scale-down;
+}
+
+.bc-page-container header,
+.bc-page-container .feds-topnav-wrapper {
+  animation: var(--bc-animation-up-time) ease-out round-corners;
+  border-radius: 24px 24px 0 0;
 }
 
 #brand-concierge-modal.dialog-modal {

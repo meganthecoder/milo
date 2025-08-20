@@ -29,6 +29,13 @@ async function openChatModal(initialMessage, el) {
   const mountEl = createTag('div', { id: 'brand-concierge-mount' });
   if (initialMessage) mountEl.dataset.initialMessage = initialMessage;
   innerModal.append(header, mountEl);
+  const pageContainer = createTag('div', { class: 'bc-page-container' });
+  const pageHeader = document.querySelector('body > header');
+  const pageMain = document.querySelector('body > main');
+  const pageFooter = document.querySelector('body > footer');
+  document.body.append(pageContainer);
+  pageContainer.append(pageHeader, pageMain, pageFooter);
+  document.body.classList.add('bc-modal-open');
   const modal = await getModal(null, {
     id: 'brand-concierge-modal',
     content: innerModal,
