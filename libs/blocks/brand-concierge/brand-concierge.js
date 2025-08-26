@@ -19,9 +19,6 @@ function getBetaLabel() {
   return createTag('span', { class: 'bc-beta-label' }, 'Beta');
 }
 
-function getBetaLabel() {
-  return createTag('span', { class: 'bc-beta-label' }, 'Beta');
-}
 const aboveMobile = window.matchMedia('(min-width: 768px)');
 
 const debounce = (callback, delay) => {
