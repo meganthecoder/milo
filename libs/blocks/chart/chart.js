@@ -518,10 +518,16 @@ const setDonutListeners = (chart, source, seriesData, units = []) => {
   chart.on('legendselectchanged', ({ selected }) => { mouseOutValue = handleDonutSelect(sourceData, selected, chart, units, title); });
 };
 
+const checkTextSpacing = (chartWrapper) => {
+  const { letterSpacing, wordSpacing } = getComputedStyle(chartWrapper);
+  return letterSpacing !== 'normal' || wordSpacing !== '0px';
+};
+
 const initChart = ({
   chartWrapper, chartType, data, series, size, ...rest
 }) => {
-  const themeName = getTheme(size);
+  const hasTextSpacing = checkTextSpacing(chartWrapper);
+  const themeName = getTheme(size, hasTextSpacing);
   const options = { chartType, processedData: data, series, size, ...rest };
   const chartOptions = getChartOptions(options);
   const chart = window.echarts?.init(chartWrapper, themeName, { renderer: 'svg' });
@@ -646,12 +652,12 @@ export const getOversizedNumberSize = (charLength) => {
 
 const init = (el) => {
   const children = el.querySelectorAll(':scope > div');
-  const chartContainer = children[2];
+  const [title, subtitle, chartContainer, footnote] = children;
   const chartWrapper = chartContainer?.querySelector(':scope > div');
-  children[0]?.classList.add('title');
-  children[1]?.classList.add('subtitle');
+  title?.classList.add('title');
+  subtitle?.classList.add('subtitle');
   chartContainer?.classList.add('chart-container');
-  children[3]?.classList.add('footnote');
+  footnote?.classList.add('footnote');
   chartWrapper?.classList.add('chart-wrapper');
 
   const chartStyles = el.classList;
@@ -757,6 +763,10 @@ const init = (el) => {
         );
         observer.observe(el);
       }
+
+      const observer = new ResizeObserver(() => { console.log('resize'); initChart(options); });
+      if (title) observer.observe(title);
+      if (subtitle) observer.observe(subtitle);
 
       /* c8 ignore next 4 */
       window.addEventListener('resize', throttle(

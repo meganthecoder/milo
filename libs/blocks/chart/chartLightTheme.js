@@ -1,8 +1,9 @@
 // Custom Echarts Theme https://echarts.apache.org/en/theme-builder.html
 export const LIGHT_SMALL = 'lightSmall';
 export const LIGHT_LARGE = 'lightLarge';
+const TEXT_SPACING = 'textSpacing';
 
-export default (deviceSize) => {
+export default (deviceSize, hasTextSpacing = false) => {
   if (!window.echarts) return null;
 
   const SMALL = 'small';
@@ -16,6 +17,8 @@ export default (deviceSize) => {
     themeName = LIGHT_SMALL;
   }
 
+  if (hasTextSpacing) themeName = TEXT_SPACING;
+
   // if themeName exists, we have already registered with options
   if (window.dataViz?.[themeName]) return themeName;
 
@@ -26,6 +29,9 @@ export default (deviceSize) => {
       fontFamily: 'inherit',
       fontSize: 16,
       fontWeight: 700,
+      lineHeight: hasTextSpacing ? 1.5 : 'auto',
+      letterSpacing: hasTextSpacing ? '0.12em' : 'normal',
+      wordSpacing: hasTextSpacing ? '0.16em' : '0px',
     },
     legend: {
       icon: 'roundRect',
@@ -37,7 +43,7 @@ export default (deviceSize) => {
       padding: 0,
       textStyle: {
         padding: [0, 0, 0, isLarge ? 10 : 3],
-        lineHeight: 1,
+        lineHeight: hasTextSpacing ? 1.5 : 1,
         height: isLarge ? 25 : 20,
       },
     },
@@ -94,6 +100,8 @@ export default (deviceSize) => {
       },
     },
   };
+
+  console.log(`theme ${themeName} options`, options);
 
   window.echarts.registerTheme(themeName, options);
   if (window.dataViz) {
