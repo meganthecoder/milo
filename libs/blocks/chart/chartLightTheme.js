@@ -30,8 +30,8 @@ export default (deviceSize, hasTextSpacing = false) => {
       fontSize: 16,
       fontWeight: 700,
       lineHeight: hasTextSpacing ? 1.5 : 'auto',
-      letterSpacing: hasTextSpacing ? '0.12em' : 'normal',
-      wordSpacing: hasTextSpacing ? '0.16em' : '0px',
+      letterSpacing: hasTextSpacing ? '0.12em' : 'normal', // option not supported in echarts
+      wordSpacing: hasTextSpacing ? '0.16em' : '0px', // option not supported in echarts
     },
     legend: {
       icon: 'roundRect',
